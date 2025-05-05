@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌟 Centered Tic Tac Toe</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #000;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle var(--duration) infinite ease-in-out;
+            opacity: 0;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: var(--opacity); }
+        }
+
+        /* Centered Game Container */
+        .game-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .game-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+            border: 1px solid #333;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-size: 2rem;
+        }
+
+        /* Centered Game Board */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+            margin: 20px auto;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .cell {
+            aspect-ratio: 1/1;
+            background-color: #111;
+            border: 2px solid #333;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #fff;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .cell:hover {
+            background-color: #222;
+            transform: scale(1.05);
+            border-color: #4dabf7;
+        }
+
+        .status {
+            font-size: 1.2rem;
+            margin: 15px 0;
+            color: #5c7cfa;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* Popunder Restart Button */
+        .popunder {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff6b6b, #ff8787);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+            z-index: 20;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border: none;
+        }
+        .popunder.visible {
+            bottom: 50px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255,107,107,0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255,107,107,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); }
+        }
+
+        /* Confetti Effects */
+        .confetti {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #fcc419;
+            opacity: 0;
+            z-index: 5;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(252,196,25,0.7);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-content {
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 80%;
+            border: 1px solid #333;
+        }
+        .modal-title {
+            color: #fff;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 500px) {
+            .game-container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .cell {
+                font-size: 2rem;
+            }
+            .popunder {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="stars" id="stars"></div>
+
+    <!-- Centered Game Container -->
+    <div class="game-wrapper">
+        <div class="game-container">
+            <h1 id="gameTitle">🌟 Tic Tac Toe</h1>
+            <div class="status" id="status">Your turn (X)</div>
+            <div class="board" id="board">
+                <div class="cell" data-index="0"></div>
+                <div class="cell" data-index="1"></div>
+                <div class="cell" data-index="2"></div>
+                <div class="cell" data-index="3"></div>
+                <div class="cell" data-index="4"></div>
+                <div class="cell" data-index="5"></div>
+                <div class="cell" data-index="6"></div>
+                <div class="cell" data-index="7"></div>
+                <div class="cell" data-index="8"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popunder Restart Button -->
+    <button class="popunder" id="popunderBtn">PLAY AGAIN</button>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">You Win!</div>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="clickSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="winSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="drawSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-retro-arcade-lose-2027.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Game elements
+        const boardEl = document.getElementById('board');
+        const cells = document.querySelectorAll('.cell');
+        const statusDisplay = document.getElementById('status');
+        const gameTitle = document.getElementById('gameTitle');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const popunderBtn = document.getElementById('popunderBtn');
+        const starsContainer = document.getElementById('stars');
+
+        // Audio elements
+        const clickSound = document.getElementById('clickSound');
+        const winSound = document.getElementById('winSound');
+        const drawSound = document.getElementById('drawSound');
+
+        // Game variables
+        let currentPlayer = 'X'; // Human is X, AI is O
+        let gameState = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = true;
+
+        // Winning conditions
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
+
+        // Create animated stars background
+        function createStars() {
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.width = `${Math.random() * 3 + 1}px`;
+                star.style.height = star.style.width;
+                star.style.setProperty('--opacity', Math.random());
+                star.style.setProperty('--duration', `${Math.random() * 5 + 3}s`);
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Create celebration particles
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#5c7cfa', '#51cf66', '#fcc419', '#cc5de8', '#748ffc', '#ff8787'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.top = '-10px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = `${Math.random() * 15 + 5}px`;
+                confetti.style.height = confetti.style.width;
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                document.body.appendChild(confetti);
+
+                const animation = confetti.animate([
+                    { top: '-10px', opacity: 1, transform: 'rotate(0deg) scale(0.5)' },
+                    { 
+                        top: `${Math.random() * 100 + 20}vh`, 
+                        left: `${Math.random() * 30 - 15 + parseFloat(confetti.style.left)}vw`,
+                        opacity: 1, 
+                        transform: `rotate(${Math.random() * 720}deg) scale(1)` 
+                    },
+                    { top: '110vh', opacity: 0, transform: 'rotate(1440deg) scale(0.2)' }
+                ], {
+                    duration: Math.random() * 3000 + 2000,
+                    easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
+                });
+
+                animation.onfinish = () => confetti.remove();
+            }
+        }
+
+        // Handle human move
+        function handleCellClick(e) {
+            if (currentPlayer !== 'X' || !gameActive) return;
+
+            const clickedCell = e.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (gameState[clickedCellIndex] !== '') return;
+
+            // Play click sound
+            clickSound.currentTime = 0;
+            clickSound.play();
+
+            makeMove(clickedCellIndex, 'X');
+            gameTitle.textContent = "🤖 AI Thinking...";
+            
+            if (gameActive) {
+                currentPlayer = 'O';
+                setTimeout(aiMove, 800);
+            }
+        }
+
+        // AI move (Minimax algorithm)
+        function aiMove() {
+            if (!gameActive) return;
+
+            let bestScore = -Infinity;
+            let bestMove;
+
+            for (let i = 0; i < 9; i++) {
+                if (gameState[i] === '') {
+                    gameState[i] = 'O';
+                    let score = minimax(gameState, 0, false);
+                    gameState[i] = '';
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = i;
+                    }
+                }
+            }
+
+            makeMove(bestMove, 'O');
+            currentPlayer = 'X';
+            gameTitle.textContent = "🌟 Your Turn!";
+        }
+
+        // Minimax algorithm
+        function minimax(board, depth, isMaximizing) {
+            let result = checkWinner();
+            if (result !== null) {
+                return result === 'O' ? 10 - depth : (result === 'X' ? depth - 10 : 0);
+            }
+
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'O';
+                        let score = minimax(board, depth + 1, false);
+                        board[i] = '';
+                        bestScore = Math.max(score, bestScore);
+                    }
+                }
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'X';
+                        let score = minimax(board, depth + 1, true);
+                        board[i] = '';
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+                return bestScore;
+            }
+        }
+
+        // Check winner (returns 'X', 'O', 'draw', or null)
+        function checkWinner() {
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+                    return gameState[a];
+                }
+            }
+            return gameState.includes('') ? null : 'draw';
+        }
+
+        // Make a move (human or AI)
+        function makeMove(index, player) {
+            gameState[index] = player;
+            cells[index].textContent = player;
+            cells[index].style.color = player === 'X' ? '#5c7cfa' : '#ff6b6b';
+            checkGameOver();
+        }
+
+        // Check if game is over
+        function checkGameOver() {
+            let result = checkWinner();
+            if (result) {
+                gameActive = false;
+                
+                if (result === 'draw') {
+                    statusDisplay.textContent = "Game Draw!";
+                    modalTitle.textContent = "😐 Draw!";
+                    drawSound.currentTime = 0;
+                    drawSound.play();
+                } else {
+                    statusDisplay.textContent = result === 'X' ? "You Win! 🎉" : "AI Wins! 🤖";
+                    modalTitle.textContent = result === 'X' ? "🎉 You Won!" : "🤖 AI Won!";
+                    winSound.currentTime = 0;
+                    winSound.play();
+                    createConfetti();
+                }
+                
+                // Show modal overlay and popunder button
+                modalOverlay.classList.add('visible');
+                setTimeout(() => {
+                    popunderBtn.classList.add('visible');
+                }, 500);
+            }
+        }
+
+        // Reset game
+        function resetGame() {
+            // Hide modal and popunder
+            modalOverlay.classList.remove('visible');
+            popunderBtn.classList.remove('visible');
+            
+            // Reset game state
+            currentPlayer = 'X';
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            statusDisplay.textContent = "Your turn (X)";
+            gameTitle.textContent = "🌟 Tic Tac Toe";
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.style.color = '#fff';
+            });
+        }
+
+        // Initialize game
+        function initGame() {
+            createStars();
+            resetGame();
+        }
+
+        // Event listeners
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        popunderBtn.addEventListener('click', resetGame);
+
+        // Initialize the game
+        initGame();
+    </script>
+</body>
+</html>
